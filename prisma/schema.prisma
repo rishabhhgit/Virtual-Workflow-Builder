@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkflowRunStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+enum NodeRunStatus {
+  queued
+  running
+  succeeded
+  failed
+  skipped
+}
+
+enum RunScope {
+  full
+  partial
+  single
+}
+
+model User {
+  id        String        @id @default(cuid())
+  clerkId   String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  workflows    Workflow[]
+  workflowRuns WorkflowRun[]
+}
+
+model Workflow {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  nodes     Json
+  edges     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs WorkflowRun[]
+
+  @@index([userId])
+}
+
+model WorkflowRun {
+  id          String            @id @default(cuid())
+  workflowId  String
+  userId      String
+  status      WorkflowRunStatus @default(queued)
+  durationMs  Int?
+  scope       RunScope
+  startedAt   DateTime          @default(now())
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeRuns NodeRun[]
+
+  @@index([workflowId])
+  @@index([userId])
+  @@index([status])
+}
+
+model NodeRun {
+  id             String        @id @default(cuid())
+  workflowRunId  String
+  nodeId         String
+  status         NodeRunStatus @default(queued)
+  inputs         Json
+  outputs        Json
+  durationMs     Int?
+  error          String?
+  startedAt      DateTime      @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  workflowRun WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+
+  @@index([workflowRunId])
+  @@index([nodeId])
+  @@index([status])
+}
+
