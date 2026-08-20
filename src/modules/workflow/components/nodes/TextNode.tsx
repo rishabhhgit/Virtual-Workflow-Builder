@@ -22,13 +22,18 @@ export function TextNode(props: NodeProps<WorkflowFlowNode>) {
   );
 
   return (
-    <BaseNodeWrapper title="Text" subtitle="Output: text" isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}>
+    <BaseNodeWrapper
+      title="Text"
+      nodeType="text"
+      subtitle="Output: text"
+      isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}
+    >
       <textarea
         value={text}
         onChange={onChange}
         placeholder="Enter text..."
         rows={3}
-        className="w-full resize-none rounded-lg border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-black/20 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+        className="w-full resize-none rounded-lg border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
       />
     </BaseNodeWrapper>
   );

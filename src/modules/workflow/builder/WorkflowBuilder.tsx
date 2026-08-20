@@ -9,6 +9,7 @@ import {
   type Connection,
   type EdgeTypes,
   type NodeTypes,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import { Download, FolderInput, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -62,7 +63,7 @@ export function WorkflowBuilder(props: {
   initialEdges: WorkflowFlowEdge[];
   initialRuns: WorkflowRunListItem[];
 }) {
-  const { nodes, edges, initialize, onNodesChange, onEdgesChange, onConnect, undo, redo, canUndo, canRedo } =
+  const { nodes, edges, initialize, onNodesChange, onEdgesChange, onConnect, undo, redo, canUndo, canRedo, addNode } =
     useWorkflowBuilderStore();
   const [workflowName, setWorkflowName] = useState(props.workflowName);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -76,12 +77,13 @@ export function WorkflowBuilder(props: {
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
   const [runningNodeIds, setRunningNodeIds] = useState<string[]>([]);
   const [lastRunDetails, setLastRunDetails] = useState<WorkflowRunDetail | null>(null);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   useEffect(() => {
     setWorkflowName(props.workflowName);
   }, [props.workflowName]);
 
-  // Load latest run details by default so canvas nodes show "Result (last run)" when workflow has existing runs.
   useEffect(() => {
     const latest = props.initialRuns[0];
     if (!latest || latest.status === "running") return;
@@ -208,7 +210,7 @@ export function WorkflowBuilder(props: {
   }, [nodes, edges, props.workflowId]);
 
   const RUN_POLL_INTERVAL_MS = 1500;
-  const RUN_POLL_MAX_DURATION_MS = 10 * 60 * 1000; // stop polling after 10 min so POSTs don't run forever
+  const RUN_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 
   useEffect(() => {
     if (!currentRunId) return;
@@ -261,8 +263,6 @@ export function WorkflowBuilder(props: {
 
   const DRAFT_STORAGE_KEY_PREFIX = "rizz-draft-";
 
-  // Only re-initialize when opening a different workflow. Prefer draft from localStorage
-  // so unsaved edits survive refresh; otherwise use server initialNodes/initialEdges.
   useEffect(() => {
     const key = `${DRAFT_STORAGE_KEY_PREFIX}${props.workflowId}`;
     let snapshot: { nodes: WorkflowFlowNode[]; edges: WorkflowFlowEdge[] };
@@ -291,7 +291,6 @@ export function WorkflowBuilder(props: {
     initialize(snapshot);
   }, [props.workflowId]); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: init per workflow only
 
-  // Persist draft to localStorage so refresh doesn't lose unsaved edits.
   useEffect(() => {
     const key = `${DRAFT_STORAGE_KEY_PREFIX}${props.workflowId}`;
     const t = setTimeout(() => {
@@ -375,12 +374,34 @@ export function WorkflowBuilder(props: {
     [nodes, runningNodeIds, runOutputsByNodeId],
   );
 
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow") as WorkflowNodeType;
+      if (!type || !reactFlowInstance) return;
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      addNode(type, position);
+    },
+    [reactFlowInstance, addNode],
+  );
+
   return (
     <div className="flex h-[calc(100vh-56px)] w-full">
       <NodePalette />
 
       <div className="relative flex-1">
-        <div className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white/70 px-4 backdrop-blur dark:border-white/10 dark:bg-white/5">
+        <div className="flex h-12 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-700 dark:bg-zinc-900">
           <div className="min-w-0 flex-1">
             <input
               type="text"
@@ -389,19 +410,19 @@ export function WorkflowBuilder(props: {
               className="w-full max-w-[240px] truncate rounded border-0 bg-transparent text-sm font-semibold text-zinc-900 outline-none focus:ring-1 focus:ring-violet-500 dark:text-zinc-100"
               placeholder="Workflow name"
             />
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Cmd/Ctrl+Z undo • Shift+Cmd/Ctrl+Z redo • Auto-saves</div>
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Cmd/Ctrl+Z undo / Shift+Cmd/Ctrl+Z redo / Auto-saves</div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={performSave}
               disabled={saveStatus === "saving"}
-              className="flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/5 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-50"
               title="Save"
             >
               <Save className="h-3.5 w-3.5" />
-              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Save"}
+              {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Save"}
             </button>
             {saveError && (
               <span className="text-xs text-amber-600 dark:text-amber-400" title={saveError}>
@@ -411,7 +432,7 @@ export function WorkflowBuilder(props: {
             <button
               type="button"
               onClick={handleExport}
-              className="rounded-full border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/5"
+              className="rounded-lg border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
               title="Export JSON"
             >
               <Download className="h-4 w-4" />
@@ -419,21 +440,29 @@ export function WorkflowBuilder(props: {
             <button
               type="button"
               onClick={handleImport}
-              className="rounded-full border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/5"
+              className="rounded-lg border border-zinc-200 p-1.5 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
               title="Import JSON"
             >
               <FolderInput className="h-4 w-4" />
             </button>
+            <div className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" />
             <button
               type="button"
               onClick={runWorkflow}
               disabled={runState === "running" || !!currentRunId}
-              className="rounded-full bg-violet-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-50 dark:bg-violet-500 dark:hover:bg-violet-600"
+              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-50 dark:bg-violet-500 dark:hover:bg-violet-600"
             >
-              {runState === "running" || currentRunId ? "Running…" : "Run"}
+              {runState === "running" || currentRunId ? (
+                <>
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Running...
+                </>
+              ) : (
+                "Run"
+              )}
             </button>
             {runState === "done" && (
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Run completed</span>
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Done</span>
             )}
             {runState === "error" && runError && (
               <>
@@ -446,7 +475,7 @@ export function WorkflowBuilder(props: {
                     setRunError(null);
                     runWorkflow();
                   }}
-                  className="rounded-full border border-amber-400 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-500 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                  className="rounded-lg border border-amber-400 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-500 dark:text-amber-300 dark:hover:bg-amber-950/30"
                 >
                   Retry
                 </button>
@@ -455,25 +484,26 @@ export function WorkflowBuilder(props: {
             <button
               type="button"
               onClick={runDagValidation}
-              className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/5"
+              className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
               Validate DAG
             </button>
             {dagValidation !== null &&
               (dagValidation.valid ? (
                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  Valid DAG
+                  Valid
                 </span>
               ) : (
                 <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                  Cycle detected — remove circular connections
+                  Cycle detected
                 </span>
               ))}
+            <div className="mx-1 h-5 w-px bg-zinc-200 dark:bg-zinc-700" />
             <button
               type="button"
               onClick={undo}
               disabled={!canUndo()}
-              className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40 dark:border-white/10 dark:text-zinc-200"
+              className="rounded-lg border border-zinc-200 px-2 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200"
             >
               Undo
             </button>
@@ -481,28 +511,31 @@ export function WorkflowBuilder(props: {
               type="button"
               onClick={redo}
               disabled={!canRedo()}
-              className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40 dark:border-white/10 dark:text-zinc-200"
+              className="rounded-lg border border-zinc-200 px-2 py-1.5 text-xs font-medium text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200"
             >
               Redo
             </button>
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 top-14">
+        <div ref={reactFlowWrapper} className="absolute inset-x-0 bottom-0 top-12">
           <ReactFlow
             nodes={nodesWithRunningState}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onInit={setReactFlowInstance}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
-            className="bg-zinc-50 dark:bg-black"
+            className="bg-zinc-50 dark:bg-zinc-950"
           >
-            <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#6b7280" />
-            <MiniMap pannable zoomable />
+            <Background variant={BackgroundVariant.Cross} gap={20} size={1} color="#e5e7eb" />
+            <MiniMap pannable zoomable className="!bg-zinc-100 dark:!bg-zinc-800" />
             <Controls />
           </ReactFlow>
         </div>
@@ -516,4 +549,3 @@ export function WorkflowBuilder(props: {
     </div>
   );
 }
-

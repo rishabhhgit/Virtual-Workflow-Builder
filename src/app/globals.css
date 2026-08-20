@@ -42,3 +42,84 @@ body {
   animation: rizz-edge-dash 1s linear infinite;
   filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.45));
 }
+
+/* n8n-style smooth edges */
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #8b5cf6;
+  stroke-width: 3;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #7c3aed;
+  stroke-width: 3;
+}
+
+/* Handle styles - n8n-like */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  border: 2px solid white;
+  transition: all 0.15s ease;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.2);
+  background: #7c3aed;
+}
+
+.react-flow__handle-left {
+  left: -6px;
+}
+
+.react-flow__handle-right {
+  right: -6px;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.dark .react-flow__minimap {
+  border-color: #374151;
+}
+
+/* Controls styling */
+.react-flow__controls {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .react-flow__controls {
+  border-color: #374151;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.react-flow__controls-button {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .react-flow__controls-button {
+  background: #1f2937;
+  border-bottom-color: #374151;
+  fill: #e5e7eb;
+}
+
+.react-flow__controls-button:hover {
+  background: #f3f4f6;
+}
+
+.dark .react-flow__controls-button:hover {
+  background: #374151;
+}

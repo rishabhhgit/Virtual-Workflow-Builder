@@ -2,10 +2,19 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Edge, Node } from "@xyflow/react";
 import type { PrismaClient } from "@prisma/client";
 
+type LLMProviderConfig = {
+  providerId?: string;
+  providerName?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+};
+
 type NodeData = {
   label?: string;
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
+  llmProvider?: LLMProviderConfig;
 };
 type NodeType =
   | "text"
@@ -33,7 +42,7 @@ function buildDependencyMap(
   return map;
 }
 
-async function runLlmInProcess(payload: {
+async function runLlmWithGemini(payload: {
   systemPrompt: string;
   userMessage: string;
   images?: string[];
@@ -77,6 +86,64 @@ async function runLlmInProcess(payload: {
   } as Parameters<typeof model.generateContent>[0]);
   const text = result.response.text() ?? "";
   return { text };
+}
+
+async function runLlmWithCustomProvider(payload: {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userMessage: string;
+}): Promise<{ text: string }> {
+  const messages: { role: string; content: string }[] = [];
+  if (payload.systemPrompt) {
+    messages.push({ role: "system", content: payload.systemPrompt });
+  }
+  messages.push({ role: "user", content: payload.userMessage });
+
+  const res = await fetch(`${payload.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${payload.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: payload.model,
+      messages,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`LLM API error (${res.status}): ${body.slice(0, 300)}`);
+  }
+
+  const json = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  const text = json.choices?.[0]?.message?.content ?? "";
+  return { text };
+}
+
+async function runLlmInProcess(payload: {
+  systemPrompt: string;
+  userMessage: string;
+  images?: string[];
+  llmProvider?: LLMProviderConfig;
+}): Promise<{ text: string }> {
+  const provider = payload.llmProvider;
+
+  if (provider?.providerId && provider.providerId !== "gemini" && provider.baseUrl && provider.apiKey) {
+    return runLlmWithCustomProvider({
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      model: provider.model ?? "gpt-4o",
+      systemPrompt: payload.systemPrompt,
+      userMessage: payload.userMessage,
+    });
+  }
+
+  return runLlmWithGemini(payload);
 }
 
 /**
@@ -184,6 +251,7 @@ export async function runWorkflowInProcess(
               images: Array.isArray(resolvedInputs.images)
                 ? (resolvedInputs.images as string[])
                 : undefined,
+              llmProvider: data.llmProvider,
             });
             outputs = { text: result.text, default: result.text };
           } else if (type === "crop_image") {

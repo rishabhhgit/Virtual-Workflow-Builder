@@ -11,11 +11,21 @@ export type WorkflowNodeType =
   | "crop_image"
   | "extract_frame";
 
+/** AI provider configuration stored in LLM node data. */
+export type LLMProviderConfig = {
+  providerId?: string;
+  providerName?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+};
+
 /** Base node data: id, type, and typed inputs/outputs. */
 export type WorkflowNodeData = {
   label?: string;
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
+  llmProvider?: LLMProviderConfig;
 };
 
 export type WorkflowFlowNode = Node<WorkflowNodeData, WorkflowNodeType>;

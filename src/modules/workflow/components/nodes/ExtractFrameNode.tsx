@@ -39,14 +39,15 @@ export function ExtractFrameNode(props: NodeProps<WorkflowFlowNode>) {
   return (
     <BaseNodeWrapper
       title="Extract Frame"
-      subtitle="Input: video → Output: image URL (FFmpeg)"
+      nodeType="extract_frame"
+      subtitle="Input: video -> Output: image URL"
       isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}
     >
       <div className="space-y-2">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           Connect video. Extract frame at timestamp (seconds):
         </p>
-        <label className="flex flex-col gap-0.5 text-xs">
+        <label className="flex flex-col gap-0.5 text-[11px]">
           <span className="text-zinc-600 dark:text-zinc-400">Timestamp (s)</span>
           <input
             type="number"
@@ -54,18 +55,18 @@ export function ExtractFrameNode(props: NodeProps<WorkflowFlowNode>) {
             step={0.1}
             value={timestampSeconds}
             onChange={onChange}
-            className="rounded border border-zinc-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-black/20 dark:text-zinc-100"
+            className="rounded border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           />
         </label>
         {resultUrl && (
           <div className="mt-2 space-y-1">
-            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Result (last run)</p>
+            <p className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Result (last run)</p>
             {resultUrl.startsWith("data:") || resultUrl.startsWith("http") ? (
-              <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10">
+              <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
                 <img src={resultUrl} alt="Extracted frame" className="h-full w-full object-contain" />
               </div>
             ) : (
-              <p className="truncate rounded bg-zinc-100 px-2 py-1 text-[10px] text-zinc-600 dark:bg-black/20 dark:text-zinc-400">
+              <p className="truncate rounded bg-zinc-100 px-2 py-1 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                 {resultUrl}
               </p>
             )}

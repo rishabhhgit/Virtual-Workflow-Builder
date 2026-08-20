@@ -7,8 +7,8 @@ import { BaseNodeWrapper } from "./BaseNodeWrapper";
 import { useWorkflowBuilderStore } from "@/modules/workflow/store/useWorkflowBuilderStore";
 import type { WorkflowFlowNode, WorkflowNodeData } from "@/modules/workflow/types";
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB for inline data URL
-const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024; // 50MB via upload API
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024;
 
 export function UploadImageNode(props: NodeProps<WorkflowFlowNode>) {
   const updateNodeData = useWorkflowBuilderStore((s) => s.updateNodeData);
@@ -68,7 +68,12 @@ export function UploadImageNode(props: NodeProps<WorkflowFlowNode>) {
   );
 
   return (
-    <BaseNodeWrapper title="Upload Image" subtitle="Output: image URL" isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}>
+    <BaseNodeWrapper
+      title="Upload Image"
+      nodeType="upload_image"
+      subtitle="Output: image URL"
+      isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}
+    >
       <div className="space-y-2">
         <input
           ref={inputRef}
@@ -80,7 +85,7 @@ export function UploadImageNode(props: NodeProps<WorkflowFlowNode>) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs font-medium text-zinc-600 hover:border-violet-500 hover:bg-violet-50 hover:text-violet-700 dark:border-white/20 dark:text-zinc-400 dark:hover:border-violet-500 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
+          className="w-full rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs font-medium text-zinc-600 hover:border-violet-500 hover:bg-violet-50 hover:text-violet-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-violet-500 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
         >
           Choose image (max 5MB inline, up to 50MB)
         </button>
@@ -88,7 +93,7 @@ export function UploadImageNode(props: NodeProps<WorkflowFlowNode>) {
           <p className="text-xs text-amber-600 dark:text-amber-400">{error}</p>
         )}
         {imageUrl && (
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10">
+          <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
             <img
               src={imageUrl}
               alt="Preview"

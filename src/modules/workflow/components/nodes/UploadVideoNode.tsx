@@ -28,7 +28,12 @@ export function UploadVideoNode(props: NodeProps<WorkflowFlowNode>) {
   );
 
   return (
-    <BaseNodeWrapper title="Upload Video" subtitle="Output: video URL" isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}>
+    <BaseNodeWrapper
+      title="Upload Video"
+      nodeType="upload_video"
+      subtitle="Output: video URL"
+      isRunning={Boolean((data as Record<string, unknown>)?.isRunning)}
+    >
       <div className="space-y-2">
         <input
           ref={inputRef}
@@ -40,12 +45,12 @@ export function UploadVideoNode(props: NodeProps<WorkflowFlowNode>) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs font-medium text-zinc-600 hover:border-violet-500 hover:bg-violet-50 hover:text-violet-700 dark:border-white/20 dark:text-zinc-400 dark:hover:border-violet-500 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
+          className="w-full rounded-lg border border-dashed border-zinc-300 px-3 py-4 text-center text-xs font-medium text-zinc-600 hover:border-violet-500 hover:bg-violet-50 hover:text-violet-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-violet-500 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
         >
           Choose video (Transloadit later)
         </button>
         {videoUrl && (
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10">
+          <div className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
             <video
               src={videoUrl}
               controls
