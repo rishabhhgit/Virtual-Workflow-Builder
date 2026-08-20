@@ -1,4 +1,4 @@
-# rizzLerAI
+# Virtual Workflow Builder
 
 A **visual workflow builder** for AI and media pipelines. Create workflows with drag-and-drop nodes (text, images, video, LLM, crop, extract frame), connect them, and run—either in the browser or via background jobs.
 
@@ -29,7 +29,7 @@ A **visual workflow builder** for AI and media pipelines. Create workflows with 
 
 ```bash
 git clone <repo-url>
-cd rizzLerAI
+cd virtual-workflow-builder
 npm install
 ```
 

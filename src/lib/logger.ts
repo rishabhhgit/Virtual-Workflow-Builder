@@ -1,4 +1,4 @@
-const PREFIX = "[rizzLerAI]";
+const PREFIX = "[Virtual Workflow Builder]";
 
 export const logger = {
   info: (msg: string, meta?: Record<string, unknown>) => {

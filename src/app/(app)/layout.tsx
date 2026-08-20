@@ -6,7 +6,7 @@ export default function AppLayout(props: { children: React.ReactNode }) {
       <header className="sticky top-0 z-20 h-14 border-b border-zinc-200 bg-white/70 backdrop-blur dark:border-white/10 dark:bg-white/5">
         <div className="mx-auto flex h-full w-full max-w-[1400px] items-center justify-between px-4">
           <Link href="/workflows" className="text-sm font-semibold tracking-tight">
-            rizzLerAI
+            Virtual Workflow Builder
           </Link>
           <span className="text-xs text-zinc-500">Local mode</span>
         </div>
